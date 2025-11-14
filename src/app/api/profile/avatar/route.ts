@@ -32,19 +32,25 @@ export async function POST(req: Request) {
 
     // Gerar nome único para o arquivo
     const fileExt = file.name.split('.').pop()
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`
-    const filePath = `avatars/${fileName}`
+    const fileName = `${Date.now()}.${fileExt}`
+    const filePath = `avatars/${user.id}/${fileName}`
 
-    // Fazer upload para o storage
+    // Converter o arquivo para buffer (compatível com ambiente Node)
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // Fazer upload para o storage com contentType explícito
     const { error: uploadError } = await supabase.storage
       .from('profiles')
-      .upload(filePath, file, {
+      .upload(filePath, buffer, {
         cacheControl: '3600',
         upsert: true,
+        contentType: file.type,
       })
 
     if (uploadError) {
-      return NextResponse.json({ error: "Erro ao fazer upload do arquivo" }, { status: 500 })
+      console.error("Upload avatar error:", uploadError.message)
+      return NextResponse.json({ error: "Erro ao fazer upload do arquivo", details: uploadError.message }, { status: 500 })
     }
 
     // Obter URL pública do arquivo
@@ -71,6 +77,7 @@ export async function POST(req: Request) {
       profile 
     })
   } catch (error) {
+    console.error("Avatar route error:", error)
     return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
 }

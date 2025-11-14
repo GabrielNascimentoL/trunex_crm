@@ -2,15 +2,16 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '../../lib/utils'
 import { Button } from '../ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet'
-import { Menu, LayoutDashboard, User, Shield } from 'lucide-react'
+import { Menu, LayoutDashboard, User, Shield, LogOut } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
+import { toast } from 'sonner'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Perfil', href: '/profile', icon: User },
   { name: 'Admin', href: '/admin', icon: Shield },
 ]
 
@@ -41,6 +42,29 @@ export function DashboardSidebar() {
 }
 
 function SidebarContent({ pathname, onLinkClick }: { pathname: string; onLinkClick?: () => void }) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleLogout = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) {
+        throw new Error('Erro ao fazer logout')
+      }
+      toast.success('Logout realizado com sucesso')
+      onLinkClick?.()
+      router.push('/login')
+    } catch (error) {
+      toast.error('Erro ao fazer logout')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="flex flex-col flex-1 bg-background border-r">
       <div className="flex items-center justify-center h-16 px-6 border-b">
@@ -67,6 +91,27 @@ function SidebarContent({ pathname, onLinkClick }: { pathname: string; onLinkCli
           )
         })}
       </nav>
+
+      <div className="border-t px-4 py-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+              <User className="h-4 w-4" />
+              <span>Minha Conta</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuItem onClick={() => { onLinkClick?.(); router.push('/profile') }}>
+              <User className="h-4 w-4 mr-2" />
+              Perfil
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} disabled={isLoading}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   )
 }
