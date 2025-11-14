@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 export function middleware(req: NextRequest) {
-  if (req.nextUrl.pathname.startsWith("/dashboard")) {
+  // Proteger rotas que requerem autenticação
+  const protectedPaths = ['/dashboard', '/admin', '/profile']
+  const isProtectedPath = protectedPaths.some(path => 
+    req.nextUrl.pathname.startsWith(path)
+  )
+
+  if (isProtectedPath) {
     const hasAccess = Boolean(req.cookies.get("sb-access-token")?.value)
     if (!hasAccess) {
       const url = new URL("/login", req.url)
@@ -12,5 +18,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/profile/:path*"],
 }
